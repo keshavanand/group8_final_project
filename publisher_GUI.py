@@ -6,6 +6,7 @@ from tkinter import Tk, Label, Entry, Button, Text, END
 import uuid
 import random
 from Group8_COMP216_Lab6_Data_Generator import *
+import threading
 
 
 
@@ -16,36 +17,42 @@ class Publisher:
         self.topic = topic
         self.delay = delay
         self.running = False
+        self.thread = None
+
 
     def generate_packet_id(self):
         packet_id = str(uuid.uuid4())
         return packet_id
 
     def __publish(self):
-        data = self.util.generate_value
+        if self.running:
+            data = self.util.generate_value
 
-        # Add timestamp and packet_id to the data
-        data = data + (int(time.time()),)
-        data = data + (self.generate_packet_id(),)
-        payload_str = json.dumps(data)
+            # Add timestamp and packet_id to the data
+            data = data + (int(time.time()),)
+            data = data + (self.generate_packet_id(),)
+            payload_str = json.dumps(data)
 
-        try:
-            self.client.publish(self.topic, payload=payload_str)
-            print(f'Published: {payload_str}')
-            sleep(self.delay)
+            try:
+                self.client.publish(self.topic, payload=payload_str)
+                print(f'Published: {payload_str}')
+                
 
-        except mqtt.MQTTException as e:
-            print(f'MQTT Exception: {e}')
+            except mqtt.MQTTException as e:
+                print(f'MQTT Exception: {e}')
+
+            self.root.after(int(self.delay * 1000), self.__publish)
 
     def start_publishing(self):
         self.running = True
-        while self.running:
-            if random.randint(1, 100) != 1:  # Skip transmission occasionally
-                self.__publish()
+        self.thread = threading.Thread(target=self.__publish)
+        self.thread.start()
 
     def stop_publishing(self):
-        self.running = False
-        self.client.disconnect()
+         self.running = False
+         if self.thread:
+            self.thread.join()  # Wait for the thread to finish
+         self.client.disconnect()
 
     def __del__(self):
         if self.client.is_connected():
@@ -85,12 +92,16 @@ class App:
         delay = float(self.entry_delay.get())
         self.publisher = Publisher(topic=topic, delay=delay)
         self.publisher.client.connect('localhost', 1883)
+        self.publisher.root = self.root  # Pass 
         self.publisher.start_publishing()
 
     def stop_publisher(self):
-        if self.publisher:
-            self.publisher.stop_publishing()
-            del self.publisher  # Disconnect and clean up the publisher instance
+        try:
+            if self.publisher:
+                self.publisher.stop_publishing()
+                del self.publisher  # Disconnect and clean up the publisher instance
+        except Exception as e :
+            print(e)
 
     def append_output(self, text):
         self.output_text.insert(END, text + '\n')
