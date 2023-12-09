@@ -2,6 +2,7 @@ import paho.mqtt.client as mqtt
 import json
 from time import sleep
 import time
+from datetime import datetime
 from tkinter import Tk, Label, Entry, Button, Text, END, messagebox, Scrollbar
 import uuid
 import random
@@ -36,16 +37,23 @@ class Publisher:
             data = self.util.generate_value
 
             # Add timestamp and packet_id to the data
-            data = data + (int(time.time()),)
-            data = data + (self.generate_packet_id(),)
+            current_time = time.time()
+            packet_id = self.generate_packet_id()
+            data = data + (current_time,)
+            data = data + (packet_id,)
             payload_str = json.dumps(data)
 
             try:
                 # Publish the payload to the MQTT broker
                 self.client.publish(self.topic, payload=payload_str)
     
+                # Convert the floating-point time to a datetime object
+                date_time_obj = datetime.fromtimestamp(current_time)
+                # Format the datetime object as a string
+                formatted_date_time = date_time_obj.strftime("%Y-%m-%d %H:%M:%S")
+
                 # Construct output text for display
-                output_text = f'Time: {data[-2]}, Packet ID: {data[-1]}'
+                output_text = f'Paylod sent -> Time: {formatted_date_time}, Packet ID: {data[-1]}\n'
                 print(output_text)
                 self.append_output(output_text)   
 
@@ -68,11 +76,14 @@ class Publisher:
          if self.thread:
             self.thread.join()  # Wait for the thread to finish
          self.client.disconnect()
+         self.append_output(f'{self.topic} publisher stopped\n')
 
     def __del__(self):
         # Disconnect from the MQTT broker when the Publisher instance is deleted
         if self.client.is_connected():
             self.client.disconnect()
+            self.append_output(f'{self.topic} publisher disconnected\n')
+
 
 
 class App:
@@ -144,6 +155,7 @@ class App:
         # Create and start the Publisher instance
         self.publisher = Publisher(self,topic=topic, delay=delay)
         self.publisher.client.connect('localhost', 1883)
+        self.append_output(f'Publisher {topic} connected with Broker\n')
         self.publisher.root = self.root  # Pass 
         self.publisher.start_publishing()
 
