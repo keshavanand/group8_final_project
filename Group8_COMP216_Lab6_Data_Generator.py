@@ -31,7 +31,7 @@ class DataGenerator:
             return random.uniform(0.5,0.7)
         
         if time_index in high_times:
-            return random.uniform(0.7,0.9)
+            return random.uniform(0.7,1)
 
     # property that generate random values based on the given pattern
     @property
@@ -55,7 +55,7 @@ class DataGenerator:
 
 # usage
 if __name__ == '__main__':
-    mall_data_gen = DataGenerator(data_range=(50, 1000))
+    mall_data_gen = DataGenerator(data_range=(0, 1000))
 
     days, data_points = mall_data_gen.generate_value
 
