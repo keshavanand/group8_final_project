@@ -1,0 +1,120 @@
+import random
+import tkinter as tk
+from tkinter import Entry, Button, Canvas, Label, Frame
+
+from Group8_COMP216_Lab6_Data_Generator import DataGenerator
+
+class DisplayGauge:
+    def __init__(self, root, data_generator):
+        self.root = root
+        self.root.title('Average Mall Visitors And Time')
+
+        # Frame for the gauge
+        self.gauge_frame = Frame(root)
+        self.gauge_frame.pack(side=tk.LEFT)
+
+        # Add a description label at the top
+        description_label = Label(root, text='Mall Visitor Analysis - Insert Time To Check Mall Visitors Average', font=('Arial', 12))
+        description_label.pack()
+
+        # Title label for the gauge frame
+        gauge_title_label = Label(self.gauge_frame, text='Circular Gauge', font=('Arial', 12))
+        gauge_title_label.pack()
+
+        self.gauge_canvas = Canvas(self.gauge_frame, width=300, height=300)
+        self.gauge_canvas.pack()
+
+        self.label = Label(self.gauge_frame, text='Time (09-23):')
+        self.label.pack()
+
+        self.time_entry = Entry(self.gauge_frame)
+        self.time_entry.pack()
+
+        # Enter button to update the time and enter
+        self.update_button = Button(self.gauge_frame, text='Enter', command=self.update_gauge)
+        self.update_button.pack()
+
+        self.data_generator = data_generator
+
+        # Initialize the gauge with 0 visitors (grey color)
+        self.draw_gauge(0, outline='grey')
+
+        # Creating a dictionary to store visitors count for each unique time
+        self.visitors_cache = {}
+
+        # Fixed range of time values from 09 to 23
+        self.time_range = [str(i).zfill(2) for i in range(9, 23)]
+
+    def update_gauge(self):
+        time = self.time_entry.get()
+        if time:
+            # Check if visitors count for the given time is cached
+            if time in self.visitors_cache:
+                visitors = self.visitors_cache[time]
+            else:
+                visitors, error_message = self.get_visitors(time)
+
+                if error_message:
+                    # Display error message
+                    self.label.config(text=error_message)
+                else:
+                    self.label.config(text='Enter Time (09-23):')
+                    self.visitors_cache[time] = visitors  # Cache the visitors count
+
+            self.draw_gauge(visitors, outline='blue')
+
+    def draw_gauge(self, value, outline):
+        self.gauge_canvas.delete('all')
+
+        # add labels around the gauge
+        label_top = Label(self.gauge_frame, text='0%', font=('Arial', 10))
+        label_top.place(x=150, y=50, anchor='center')
+
+        label_bottom = Label(self.gauge_frame, text='50%', font=('Arial', 10))
+        label_bottom.place(x=150, y=250, anchor='center')
+
+        label_left = Label(self.gauge_frame, text='25%', font=('Arial', 10))
+        label_left.place(x=20, y=175, anchor='center')
+
+        label_right = Label(self.gauge_frame, text='75%', font=('Arial', 10))
+        label_right.place(x=270, y=175, anchor='center')
+
+        cx, cy, radius = 150, 150, 100
+        max_value = 1200
+        if value > max_value:
+            value = max_value
+
+        angle = (value / max_value) * 360  # Adjusting the angle for values greater than 1200
+
+        # Generate a random color for the outline
+        outline_color = '#{:02X}{:02X}{:02X}'.format(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+
+        # Create an arc with the random outline color
+        self.gauge_canvas.create_arc(cx - radius, cy - radius, cx + radius, cy + radius, start=90, extent=angle, style=tk.ARC, outline=outline_color, width=20)
+
+        # Add a label
+        self.gauge_canvas.create_text(cx, cy, text=f'{value} Visitors', font=('Arial', 12))
+
+    def get_visitors(self, time):
+        try:
+            time = float(time)
+            if 9 <= time <= 23:
+                day_index = int(time - 9)
+                day_index = min(day_index, len(self.time_range) - 1)
+                normalized_value = self.data_generator._DataGenerator__generate_normalized_value(day_index)
+                min_val, max_val = self.data_generator.data_range
+                value = (max_val - min_val) * normalized_value + min_val
+                return int(value), None
+            else:
+                return 0, 'Invalid time. Please enter a time between 09 and 23.'
+        except ValueError:
+            return 0, 'Invalid input. Please enter a valid numeric time.'
+
+def main():
+    root = tk.Tk()
+    mall_data_gen = DataGenerator(data_range=(200, 1100))
+    app = DisplayGauge(root, mall_data_gen)
+    root.mainloop()
+
+if __name__ == '__main__':
+    main()
