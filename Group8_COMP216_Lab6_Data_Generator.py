@@ -11,19 +11,27 @@ class DataGenerator:
 
     # generate normalized random values between 0 to 1
     def __generate_normalized_value(self, time_index):
+        # List of peak times:
+        low_times = [0,14] # 9 AM and 23 PM
+        low_mid_times = [1,6,13]
+        mid_times = [2,5,7,12]
+        mid_high_times = [4,8,11]
+        high_times = [3,9,10] # 12 and 6,7PM
         
-          # just simple pattern bases on even and odd
-        if time_index % 2 == 0:  # Even indexes
-            if time_index == 0:  # if its 9am it will be lowest
-                return random.uniform(0.1,0.2)
-            return random.uniform(0.4, 0.6) # otherwise random up down  
-        else:  # Odd days
-            if time_index == 3: #if its lunch time it will be at peak
-                return random.uniform(0.7,0.9)
-            if time_index == 13:
-                return random.uniform(0.6,0.8) # at movie time it will be higher than normal
-            return random.uniform(0.2, 0.4)
-
+        if time_index in low_times:
+            return random.uniform(0.1,0.15)
+        
+        if time_index in low_mid_times:
+            return random.uniform(0.15,0.3)
+        
+        if time_index in mid_times:
+            return random.uniform(0.3,0.5)
+        
+        if time_index in mid_high_times:
+            return random.uniform(0.5,0.7)
+        
+        if time_index in high_times:
+            return random.uniform(0.7,0.9)
 
     # property that generate random values based on the given pattern
     @property
@@ -31,6 +39,7 @@ class DataGenerator:
         times = [str(i).zfill(2) for i in range(9, 24)]  # 09 to 23
         data_points = []
         for i, time in enumerate(times):
+            print(time)
             normalized_value = self.__generate_normalized_value(i)
             min_val, max_val = self.data_range
             value = (max_val - min_val) * normalized_value + min_val
@@ -46,7 +55,7 @@ class DataGenerator:
 
 # usage
 if __name__ == '__main__':
-    mall_data_gen = DataGenerator(data_range=(200, 1100))
+    mall_data_gen = DataGenerator(data_range=(50, 1000))
 
     days, data_points = mall_data_gen.generate_value
 
