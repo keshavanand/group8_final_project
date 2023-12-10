@@ -1,157 +1,141 @@
+import random
 import tkinter as tk
-from tkinter import Entry, Button, Canvas, Label, Frame
+from tkinter import Entry, Canvas, Label, Frame
+from tkinter import ttk  # Import ttk for themed buttons
 
 from Group8_COMP216_Lab6_Data_Generator import DataGenerator
 
-class BarChartGauge:
+class DisplayBarChart:
     def __init__(self, root, data_generator):
         self.root = root
         self.root.title('Average Mall Visitors And Time')
 
-        # Add a description label at the top
-        description_label = Label(root, text='Mall Visitor Analysis - Insert Time To Check Mall Visitors Average', font=('Arial', 12))
-        description_label.pack()
+        # Frame for the bar chart
+        self.bar_chart_frame = Frame(root)
+        self.bar_chart_frame.pack(side=tk.LEFT)
 
-        # Frame for the gauge
-        self.gauge_frame = Frame(root)
-        self.gauge_frame.pack(side=tk.LEFT)
+        # Title label for the bar chart frame
+        bar_chart_title_label = Label(self.bar_chart_frame, text='Mall Visitor Analysis\nChoose Time To Check Mall Visitors\n', font=('Arial', 12))
+        bar_chart_title_label.pack()
 
-        # Title label for the gauge frame (placed at the top)
-        gauge_title_label = Label(self.gauge_frame, text='Horizontal Bar Chart Gauge\n\n\n\n\n\n', font=('Arial', 13))
-        gauge_title_label.pack(side=tk.TOP)  # Set the side attribute to TOP
+        self.bar_chart_canvas = Canvas(self.bar_chart_frame, width=340, height=300)
+        self.bar_chart_canvas.pack()
 
-
-        # Canvas widget for the bar gauge
-        self.bar_gauge_canvas = Canvas(self.gauge_frame, width=520, height=50)
-        self.bar_gauge_canvas.pack()
-
-        # Create a horizontal bar using a Rectangle
-        self.bar_gauge = self.bar_gauge_canvas.create_rectangle(50, 15, 290, 40, fill='grey', outline='blue')
-
-        self.label = Label(self.gauge_frame, text='Time (09-23):')
+        self.label = Label(self.bar_chart_frame, text='Time: 9 - 23:')
         self.label.pack()
 
-        self.time_entry = Entry(self.gauge_frame)
-        self.time_entry.pack()
+        # Entry field for time input with default value 9
+        self.time_entry = Entry(self.bar_chart_frame)
+        self.time_entry.insert(0, '9')
+        self.time_entry.pack(side=tk.LEFT, padx=20)
 
-        # Enter button to update the time and enter
-        self.update_button = Button(self.gauge_frame, text='Enter', command=self.update_gauge)
-        self.update_button.pack()
+        # Up arrow button
+        self.up_button = ttk.Button(self.bar_chart_frame, text='\u25B2', command=lambda: self.update_time(1))
+        self.up_button.pack(side=tk.LEFT, padx=5)
+
+        # Down arrow button
+        self.down_button = ttk.Button(self.bar_chart_frame, text='\u25BC', command=lambda: self.update_time(-1))
+        self.down_button.pack(side=tk.LEFT)
 
         self.data_generator = data_generator
 
-        # Initialize the gauge with zero visitors (grey color)
-        self.draw_gauge(0)
+        # Initialize the bar chart with 0 visitors (grey color)
+        self.draw_chart(0, outline='grey')
 
-        # Create a dictionary to store visitors count for each unique time
+        # Creating a dictionary to store visitors count for each unique time
         self.visitors_cache = {}
 
-        # We fixed a range of time values from 09 to 23
+        # Fixed range of time values from 09 to 23
         self.time_range = [str(i).zfill(2) for i in range(9, 23)]
 
-        
-    def get_visitors(self, time):
-        try:
-            time = float(time)
-            if 9 <= time <= 23:
-                day_index = int((time - 9) / 2)
-                day_index = min(day_index, 6)
-                
-                # Get the day name from the time
-                day_name = list(self.data_generator.data_generators.keys())[day_index]
-                data_gen = self.data_generator.data_generators[day_name]
-                
-                # Directly access the elements of the tuple returned by generate_value
-                times, data_points = data_gen.generate_value
-                
-                # Assuming the structure of data_points is a list
-                if data_points:
-                    visitors = data_points[0]  # Assuming the first element represents the number of visitors
-                    return int(visitors), None
-                else:
-                    return 0, 'Invalid data generated.'
-            else:
-                return 0, 'Invalid time. Please enter a time between 09 and 23.'
-        except ValueError:
-            return 0, 'Invalid input. Please enter a valid numeric time.'
+        # Update the bar chart with the default value
+        self.update_chart()
 
-        
-    def update_gauge(self):
+    def update_time(self, increment):
+        current_time = self.time_entry.get()
+        try:
+            current_time = int(current_time)
+            new_time = current_time + increment
+            if 9 <= new_time <= 23:
+                self.time_entry.delete(0, tk.END)
+                self.time_entry.insert(0, str(new_time))
+                self.update_chart()  # Update the bar chart after changing the time
+        except ValueError:
+            pass  # Ignore non-integer values in the time entry
+
+    def update_chart(self):
         time = self.time_entry.get()
         if time:
-            # check if visitors count for the given time is cached
+            # Check if visitors count for the given time is cached
             if time in self.visitors_cache:
                 visitors = self.visitors_cache[time]
             else:
                 visitors, error_message = self.get_visitors(time)
 
                 if error_message:
-                    # display error if it occurs
+                    # Display error message
                     self.label.config(text=error_message)
                 else:
-                    self.label.config(text='Enter Time (09-23):')
-                    self.visitors_cache[time] = visitors  # cache the visitors count
+                    self.label.config(text='Time: 9 - 23')
+                    self.visitors_cache[time] = visitors  # Cache the visitors count
 
-            self.draw_gauge(visitors)
+            self.draw_chart(visitors, outline='blue')
 
-    # draw the bar and change color with number of visitors
-    def draw_gauge(self, value):
-        # if visitors 500 or less
-        if value <= 500:
-            fill_color = 'green'
-        # if visitors 800 or less
-        elif value <= 800:
-            fill_color = 'yellow'
-        # if visitors higher
-        else:
-            fill_color = 'red'
+    def draw_chart(self, value, outline):
+        self.bar_chart_canvas.delete('all')
 
-        label_positions = [(50, 8, '0'), (170, 8, '600'), (290, 8, '1200')]
+        # add labels around the chart
+        base_x = 20
+        max_x = 300
+        label_left = Label(self.bar_chart_frame, text='0', font=('Arial', 10))
+        label_left.place(x=base_x+0, y=175, anchor='center')
 
-        for x, y, text in label_positions:
-            self.bar_gauge_canvas.create_text(x, y, text=text, font=('Arial', 8), tags='value_label')
+        label_bottom = Label(self.bar_chart_frame, text='250', font=('Arial', 10))
+        label_bottom.place(x=(base_x+max_x)*0.25, y=175, anchor='center')
 
-        # update the fill color and width of bar gauge
-        bar_width = int(200 * (value / 1000))
-        # fill color to the bar according to the number of visitors
-        self.bar_gauge_canvas.itemconfig(self.bar_gauge, fill=fill_color)
-        self.bar_gauge_canvas.coords(self.bar_gauge, 50, 15, 50 + bar_width, 40)
-
-        # Clear previous text after update
-        self.bar_gauge_canvas.delete('value_text')
-
-        # Add a label with the new value of visitors
-        self.bar_gauge_canvas.create_text(220, 48, text=f'{value} Visitors ', font=('Arial', 8), tags='value_text')
-
- 
+        label_bottom = Label(self.bar_chart_frame, text='500', font=('Arial', 10))
+        label_bottom.place(x=(base_x+max_x)*0.5, y=175, anchor='center')
         
-class MallVisitorDataGenerator:
-    def __init__(self):
-        # creating different data for different days and storing it in dict
-        self.data_generators = {
-            'Monday': DataGenerator(data_range=(100, 500), base_shape='sin', noise_level=50),
-            'Tuesday': DataGenerator(data_range=(200, 600), base_shape='sin', noise_level=70),
-            'Wednesday': DataGenerator(data_range=(300, 700), base_shape='sin', noise_level=90),
-            'Thursday': DataGenerator(data_range=(400, 800), base_shape='sin', noise_level=110),
-            'Friday': DataGenerator(data_range=(500, 900), base_shape='sin', noise_level=130),
-            'Saturday': DataGenerator(data_range=(600, 1000), base_shape='sin', noise_level=150),
-            'Sunday': DataGenerator(data_range=(700, 1100), base_shape='sin', noise_level=170)
-        }
+        label_bottom = Label(self.bar_chart_frame, text='750', font=('Arial', 10))
+        label_bottom.place(x=(base_x+max_x)*0.75, y=175, anchor='center')
 
-    # generating data for each day in dict and ploting it on graph
-    def generate_data(self):
-        days = list(self.data_generators.keys())
-        for day in days:
-            data_gen = self.data_generators[day]
-            num_data_points = 500
-            data_points = [data_gen.generate_value() for _ in range(num_data_points)]
+        label_right = Label(self.bar_chart_frame, text='1000', font=('Arial', 10))
+        label_right.place(x=base_x+max_x, y=175, anchor='center')
 
+        max_value = 1000
+        if value > max_value:
+            value = max_value
 
-#Show everything under main
+        # Generate a random color for the outline
+        outline_color = '#{:02X}{:02X}{:02X}'.format(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+
+        # Calculate the width of the bar chart
+        bar_width = int(max_x * (value / max_value))
+
+        # Create a horizontal bar using a Rectangle with the random outline color
+        self.bar_chart_canvas.create_rectangle(base_x+0, 130, base_x + bar_width, 180, fill=outline_color, outline=outline, width=2)
+
+        # Add a label
+        self.bar_chart_canvas.create_text(150, 200, text=f'{value} Visitors', font=('Arial', 12))
+
+    def get_visitors(self, time):
+        try:
+            time = float(time)
+            if 9 <= time <= 23:
+                day_index = int(time - 9)
+                normalized_value = self.data_generator._DataGenerator__generate_normalized_value(day_index)
+                min_val, max_val = self.data_generator.data_range
+                value = (max_val - min_val) * normalized_value + min_val
+                return int(value), None
+            else:
+                return 0, 'Invalid time. Please enter a time between 09 and 23.'
+        except ValueError:
+            return 0, 'Invalid input. Please enter a valid numeric time.'
+
 def main():
     root = tk.Tk()
-    mall_data_gen = MallVisitorDataGenerator()
-    app = BarChartGauge(root, mall_data_gen)
+    mall_data_gen = DataGenerator(data_range=(0, 1000))
+    app = DisplayBarChart(root, mall_data_gen)
     root.mainloop()
 
 if __name__ == '__main__':
