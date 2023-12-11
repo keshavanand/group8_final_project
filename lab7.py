@@ -1,6 +1,6 @@
 import random
 import tkinter as tk
-from tkinter import Entry, Canvas, Label, Frame
+from tkinter import Entry, Button, Canvas, Label, Frame
 from tkinter import ttk  # Import ttk for themed buttons
 
 from Group8_COMP216_Lab6_Data_Generator import DataGenerator
@@ -30,12 +30,17 @@ class DisplayGauge:
         self.time_entry.pack(side=tk.LEFT)
 
         # Up arrow button
-        self.up_button = ttk.Button(self.gauge_frame, text='\u25B2', command=lambda: self.update_time(1))
-        self.up_button.pack(side=tk.LEFT)
+        # self.up_button = ttk.Button(self.gauge_frame, text='\u25B2', command=lambda: self.update_time(1))
+        # self.up_button.pack(side=tk.LEFT)
 
-        # Down arrow button
-        self.down_button = ttk.Button(self.gauge_frame, text='\u25BC', command=lambda: self.update_time(-1))
-        self.down_button.pack(side=tk.LEFT)
+        # # Down arrow button
+        # self.down_button = ttk.Button(self.gauge_frame, text='\u25BC', command=lambda: self.update_time(-1))
+        # self.down_button.pack(side=tk.LEFT)
+
+        # Enter button to update the time and enter
+        self.update_button = Button(self.gauge_frame, text='Enter', command=self.update_gauge)
+        self.update_button.pack()
+
 
         self.data_generator = data_generator
 
